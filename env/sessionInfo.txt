@@ -1,0 +1,35 @@
+# Known-good environment for the AF293 DIA pipeline
+# captured: 2026-10-27 08:44:05.571601
+# R version: R version 4.5.2 (2025-10-31)
+# platform : aarch64-apple-darwin20
+
+package	version	installed
+data.table	1.18.2.1	TRUE
+ggplot2	4.0.2	TRUE
+matrixStats	1.5.0	TRUE
+pheatmap	1.0.13	TRUE
+ggrepel	0.9.6	TRUE
+UpSetR	1.4.0	TRUE
+circlize	0.4.17	TRUE
+VennDiagram	1.8.2	TRUE
+futile.logger	1.4.9	TRUE
+tidygraph	1.3.1	TRUE
+dplyr	1.2.0	TRUE
+ggraph	2.2.2	TRUE
+igraph	2.2.2	TRUE
+patchwork	1.3.2	TRUE
+scales	1.4.0	TRUE
+stringr	1.6.0	TRUE
+RCurl	1.98.1.17	TRUE
+ggforce	0.5.0	TRUE
+svglite	2.2.2	TRUE
+ragg	1.5.0	TRUE
+limma	3.66.0	TRUE
+clusterProfiler	4.18.4	TRUE
+enrichplot	1.30.4	TRUE
+KEGGREST	1.50.0	TRUE
+ComplexHeatmap	2.26.1	TRUE
+EnhancedVolcano	1.29.1	TRUE
+ggkegg	1.8.0	TRUE
+STRINGdb	NA	FALSE
+fgsea	1.36.2	TRUE

@@ -1,0 +1,93 @@
+# ============================================================================
+# .gitignore  -  AF293 DIA proteomics project (3v3 Lactate vs Saline)
+# Tracked: code (scripts/, env/), config/, processed input (data/*.tsv),
+#          annotation/ reference tables, README.
+# Ignored: macOS litter, raw MS data, sensitive/administrative documents,
+#          manuscript drafts, secrets, and all REGENERATABLE pipeline outputs
+#          (rebuilt by `bash scripts/run_all.sh`). Each output dir keeps a
+#          .gitkeep so the folder structure survives a clean clone.
+# ============================================================================
+
+# ---- macOS litter ----------------------------------------------------------
+._*
+.DS_Store
+.AppleDouble
+.LSOverride
+Icon?
+.Spotlight-V100
+.Trashes
+.fseventsd
+.TemporaryItems
+.DocumentRevisions-V100
+.VolumeIcon.icns
+
+# ---- R / editor litter -----------------------------------------------------
+.Rproj.user/
+.Rhistory
+.RData
+.Rapp.history
+Rplots.pdf
+*~
+*.swp
+.vscode/
+.idea/
+
+# ---- Office / LaTeX temporary files ----------------------------------------
+~$*
+*.aux
+*.synctex.gz
+*.fdb_latexmk
+*.fls
+*.out
+*.toc
+
+# ---- manuscript drafts (kept local, not part of the code repo) -------------
+panel_Lactate_vs_Saline__methods_legends_results.*
+
+# ---- raw MS data (deposit in PRIDE/MassIVE, not git) -----------------------
+data/Raws/
+*.raw
+*.RAW
+*.wiff
+*.wiff.scan
+*.d/
+*.mzML
+*.mzXML
+*.zip
+*.tar.gz
+*.7z
+
+# ---- sensitive / administrative documents ----------------------------------
+*Quotation*
+*quotation*
+*invoice*
+*Invoice*
+*orcamento*
+*Orcamento*
+
+# ---- secrets / credentials (none present; guard against future leaks) ------
+.env
+.env.*
+.Renviron
+.httr-oauth
+.netrc
+*.pem
+*.key
+*credentials*
+*secret*
+*token*
+
+# ---- generated pipeline outputs (regenerate with run_all.sh) ---------------
+results/*
+figures/*
+objects/*
+logs/*
+!**/.gitkeep
+
+# ---- caches (re-downloaded; need internet) ---------------------------------
+cache/
+afm*.xml
+*.xml
+
+# ---- keep: the exact design sheet (small, documents what was run) ----------
+!config/samples.tsv
