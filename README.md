@@ -61,19 +61,8 @@ results/ figures/ objects/ logs/   generated, git-ignored
 cache/        KEGG KGML downloads, git-ignored
 ```
 
-## Reproduce
-
-```bash
-Rscript env/dependencies.R
-bash scripts/run_all.sh
-```
-
-Developed on R 4.5.2. Core steps (00, 01, 03) run offline. The enrichment
-and pathway steps need internet access (KEGG; UniProt/eggNOG only if
-`annotation/` is missing). To run from another location, set
-`DIA_PROJECT_ROOT=/path/to/project`.
 
 ## Raw data
 
-The Thermo `.raw` files are not stored in this repository.
+The Thermo `.raw` files are kept in the ProteomeXchange data base under the ID XXXXXXX.
 <!-- TODO: add PRIDE / MassIVE accession once deposited. -->
