@@ -2,7 +2,7 @@
 # ============================================================================
 # config.R  -  AF293 (A. fumigatus) DIA re-analysis. Same workflow as
 # New_analysis_August (DDA) but LIMMA-ONLY (proDA removed per user request),
-# applied to the FragPipe/DIA-NN combined_protein.tsv.
+# applied to the FragPipe (IonQuant MaxLFQ) combined_protein.tsv.
 # Sourced by every script. NOTHING else hard-codes paths or thresholds.
 #
 # DESIGN (new-reps run, 2026-08-25): R1-R4 = biological replicates ("Pool" was a
@@ -12,6 +12,8 @@
 # *** USER-SPECIFIED 3v3 run (2026-08-25) ***: exact replicate list requested.
 #   Saline  N=3 = {R1_rep2_1, R2_rep2_2, R3_rep2_3}  -> ALL batch-2 (2026-08-19)
 #   Lactate N=3 = {R2_2, R3_3, R4_4}                 -> ALL batch-1 (2026-08-07)
+# Renamed for the paper (2026-11-04) to Saline_R1-R3 / Lactate_R1-R3 in data/;
+# old -> paper names in config/sample_name_map.csv.
 #
 # *** BATCH CORRECTION IS IMPOSSIBLE HERE ***: group is PERFECTLY confounded with
 # batch (Saline=only batch-2, Lactate=only batch-1; no shared batch). The design
@@ -43,7 +45,9 @@ ROOT <- .resolve_root()
 CFG <- list(
   # ---- Paths (all relative to the project ROOT) ----------------------------
   root          = ROOT,
-  # In-project input (the FULL 14-sample new-reps matrix; keep_samples picks the 6).
+  # In-project input: FragPipe combined_protein.tsv already reduced to the 6
+  # analysed samples (full 14-run report in Fragpipe_results/); keep_samples
+  # below now acts only as a check that these 6 are present.
   # Falls back to the external FragPipe run if data/ is absent.
   input_protein = {
     p <- file.path(ROOT, "data", "combined_protein.tsv")
@@ -58,8 +62,10 @@ CFG <- list(
   control      = "Saline",
   group_levels = c("Saline", "Lactate"),
   batch_adjust = TRUE,   # requested; auto-disabled by rank check (confounded)
-  keep_samples = c("Saline_R1_rep2_1", "Saline_R2_rep2_2", "Saline_R3_rep2_3",
-                   "Lactate_R2_2", "Lactate_R3_3", "Lactate_R4_4"),
+  keep_samples = c("Saline_R1", "Saline_R2", "Saline_R3",
+                   "Lactate_R1", "Lactate_R2", "Lactate_R3"),
+  # Acquisition date per group (sample names no longer encode it).
+  acq_batch    = c(Saline = "2026-08-19", Lactate = "2026-08-07"),
   contrasts = list(
     list(name = "Lactate_vs_Saline", test = "Lactate", control = "Saline")
   ),
@@ -106,7 +112,8 @@ CFG$dir_data       <- file.path(CFG$base, "data")
 CFG$dir_results    <- file.path(CFG$base, "results")
 CFG$dir_figures    <- file.path(CFG$base, "figures")                 # PNG figures
 CFG$dir_figures_pdf  <- file.path(CFG$dir_figures, "Figures PDF")     # PDF copies of every figure
-CFG$dir_figures_kegg <- file.path(CFG$dir_figures, "KEGG Pathways")   # ggkegg maps, PNG + PDF (06)
+CFG$dir_figures_kegg <- file.path(CFG$dir_figures, "KEGG Pathways")   # ggkegg maps, PNG (06)
+CFG$dir_figures_kegg_pdf <- file.path(CFG$dir_figures_kegg, "KEGG Figures PDF")  # ggkegg maps, PDF (06)
 CFG$dir_objects    <- file.path(CFG$base, "objects")
 CFG$dir_logs       <- file.path(CFG$base, "logs")
 CFG$dir_config     <- file.path(CFG$base, "config")
@@ -114,6 +121,7 @@ CFG$dir_annotation <- file.path(CFG$base, "annotation")      # cached GO map (Un
 CFG$dir_cache      <- file.path(CFG$base, "cache", "kegg_kgml")  # KGML download cache (06)
 CFG$samples_tsv    <- file.path(CFG$dir_config, "samples.tsv")
 for (d in c(CFG$dir_results, CFG$dir_figures, CFG$dir_figures_pdf, CFG$dir_figures_kegg,
+            CFG$dir_figures_kegg_pdf,
             CFG$dir_objects, CFG$dir_logs, CFG$dir_config, CFG$dir_annotation, CFG$dir_cache))
   if (!dir.exists(d)) dir.create(d, recursive = TRUE)
 

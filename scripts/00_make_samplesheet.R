@@ -1,8 +1,8 @@
 #!/usr/bin/env Rscript
 # ============================================================================
 # 00_make_samplesheet.R  (DIA new-reps)  -  Derive the sample sheet from the
-# FragPipe/DIA MaxLFQ column names. Naming varies: "Lactate_R1_1", "Saline_R4_4",
-# and the later batch "Saline_R1_rep2_1" ... "Saline_R6_rep2_6".
+# FragPipe MaxLFQ column names ("Saline_R1" ... "Lactate_R3"; paper names, see
+# config/sample_name_map.csv). Acquisition batch comes from CFG$acq_batch.
 #
 # DESIGN: 2 groups, biological replicates. Saline expanded with a 2nd acquisition
 # batch (2026-08-19, "rep2"). Each injection = one biological replicate (its own
@@ -16,10 +16,10 @@ source(file.path(dirname(self), "config.R"))
 
 hdr <- names(fread(CFG$input_protein, sep = "\t", nrows = 0, check.names = FALSE))
 maxlfq <- grep(" MaxLFQ Intensity$", hdr, value = TRUE)
-raw_name <- sub(" MaxLFQ Intensity$", "", maxlfq)             # e.g. Saline_R1_rep2_1
+raw_name <- sub(" MaxLFQ Intensity$", "", maxlfq)             # e.g. Saline_R1
 # group = everything before the first "_R<digit>" token (robust to _rep2_ suffixes)
 group    <- sub("_R[0-9].*$", "", raw_name)                   # Lactate / Saline
-batch    <- ifelse(grepl("rep2", raw_name), "2026-08-19", "2026-08-07")
+batch    <- unname(CFG$acq_batch[group])
 sample_id <- raw_name                                          # unique per injection
 
 ss_all <- data.table(maxlfq_col = maxlfq, raw_name = raw_name, group_raw = group,

@@ -1,0 +1,30 @@
+time="13:47:36" level=info msg="Executing Filter  v5.1.3"
+time="13:47:36" level=info msg="Processing peptide identification files"
+time="13:47:36" level=info msg="Parsing D:\\Clayton\\fumigatus\\results\\Af293_DIA_new_reps\\Lactate_R1_1\\interact-20260807_150a152_PoolLactato01a03_ThalisonplusClayton_DIA_R1_rank5.pep.xml"
+time="13:47:36" level=info msg="Parsing D:\\Clayton\\fumigatus\\results\\Af293_DIA_new_reps\\Lactate_R1_1\\interact-20260807_150a152_PoolLactato01a03_ThalisonplusClayton_DIA_R1_rank1.pep.xml"
+time="13:47:36" level=info msg="Parsing D:\\Clayton\\fumigatus\\results\\Af293_DIA_new_reps\\Lactate_R1_1\\interact-20260807_150a152_PoolLactato01a03_ThalisonplusClayton_DIA_R1_rank3.pep.xml"
+time="13:47:36" level=info msg="Parsing D:\\Clayton\\fumigatus\\results\\Af293_DIA_new_reps\\Lactate_R1_1\\interact-20260807_150a152_PoolLactato01a03_ThalisonplusClayton_DIA_R1_rank4.pep.xml"
+time="13:47:36" level=info msg="Parsing D:\\Clayton\\fumigatus\\results\\Af293_DIA_new_reps\\Lactate_R1_1\\interact-20260807_150a152_PoolLactato01a03_ThalisonplusClayton_DIA_R1_rank2.pep.xml"
+time="13:47:37" level=info msg="1+ Charge profile" decoy=6 target=103
+time="13:47:37" level=info msg="2+ Charge profile" decoy=423 target=10429
+time="13:47:37" level=info msg="3+ Charge profile" decoy=229 target=3360
+time="13:47:37" level=info msg="4+ Charge profile" decoy=39 target=233
+time="13:47:37" level=info msg="5+ Charge profile" decoy=0 target=0
+time="13:47:37" level=info msg="6+ Charge profile" decoy=0 target=0
+time="13:47:37" level=info msg="Database search results" ions=8515 peptides=8039 psms=14822
+time="13:47:37" level=info msg="Converged to 1.00 % FDR with 12425 PSMs" decoy=124 threshold=0.87816 total=12549
+time="13:47:37" level=info msg="Converged to 0.98 % FDR with 6194 Peptides" decoy=61 threshold=0.92096 total=6255
+time="13:47:37" level=info msg="Converged to 0.99 % FDR with 6673 Ions" decoy=66 threshold=0.914207 total=6739
+time="13:47:37" level=info msg="Protein inference results" decoy=3082 target=4364
+time="13:47:37" level=info msg="Converged to 0.97 % FDR with 1546 Proteins" decoy=15 threshold=0.9891 total=1561
+time="13:47:37" level=info msg="Applying sequential FDR estimation" ions=6739 peptides=6313 psms=12254
+time="13:47:37" level=info msg="12241 PSMs" decoy=12 threshold=0.878307 total=12253
+time="13:47:37" level=info msg="6077 Peptides" decoy=7 threshold=0.92096 total=6084
+time="13:47:37" level=info msg="6550 Ions" decoy=7 threshold=0.914207 total=6557
+time="13:47:37" level=info msg="Post processing identifications"
+time="13:47:37" level=info msg="Assigning protein identifications to layers"
+time="13:47:38" level=info msg="Processing protein inference"
+time="13:47:38" level=info msg="Synchronizing PSMs and proteins"
+time="13:47:38" level=info msg="Final report numbers after FDR filtering, and post-processing" ions=6549 peptides=6076 proteins=1375 psms=12240
+time="13:47:38" level=info msg=Saving
+time="13:47:39" level=info msg=Done

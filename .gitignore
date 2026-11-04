@@ -83,7 +83,7 @@ figures/*
 objects/*
 logs/*
 !**/.gitkeep
-
+Fragpipe_results
 # ---- caches (re-downloaded; need internet) ---------------------------------
 cache/
 afm*.xml

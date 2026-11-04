@@ -1,7 +1,7 @@
 maxlfq_col	raw_name	batch	sample_id	group
-Saline_R1_rep2_1 MaxLFQ Intensity	Saline_R1_rep2_1	2026-08-19	Saline_R1_rep2_1	Saline
-Saline_R2_rep2_2 MaxLFQ Intensity	Saline_R2_rep2_2	2026-08-19	Saline_R2_rep2_2	Saline
-Saline_R3_rep2_3 MaxLFQ Intensity	Saline_R3_rep2_3	2026-08-19	Saline_R3_rep2_3	Saline
-Lactate_R2_2 MaxLFQ Intensity	Lactate_R2_2	2026-08-07	Lactate_R2_2	Lactate
-Lactate_R3_3 MaxLFQ Intensity	Lactate_R3_3	2026-08-07	Lactate_R3_3	Lactate
-Lactate_R4_4 MaxLFQ Intensity	Lactate_R4_4	2026-08-07	Lactate_R4_4	Lactate
+Saline_R1 MaxLFQ Intensity	Saline_R1	2026-08-19	Saline_R1	Saline
+Saline_R2 MaxLFQ Intensity	Saline_R2	2026-08-19	Saline_R2	Saline
+Saline_R3 MaxLFQ Intensity	Saline_R3	2026-08-19	Saline_R3	Saline
+Lactate_R1 MaxLFQ Intensity	Lactate_R1	2026-08-07	Lactate_R1	Lactate
+Lactate_R2 MaxLFQ Intensity	Lactate_R2	2026-08-07	Lactate_R2	Lactate
+Lactate_R3 MaxLFQ Intensity	Lactate_R3	2026-08-07	Lactate_R3	Lactate

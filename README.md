@@ -8,11 +8,16 @@ FragPipe / DIA-NN `combined_protein.tsv` (MaxLFQ), analysed with limma.
 
 | Group   | N | Samples                                              | Acquisition |
 |---------|---|------------------------------------------------------|-------------|
-| Saline  | 3 | Saline_R1_rep2_1, Saline_R2_rep2_2, Saline_R3_rep2_3 | 2026-08-19  |
-| Lactate | 3 | Lactate_R2_2, Lactate_R3_3, Lactate_R4_4             | 2026-08-07  |
+| Saline  | 3 | Saline_R1, Saline_R2, Saline_R3                      | 2026-08-19  |
+| Lactate | 3 | Lactate_R1, Lactate_R2, Lactate_R3                   | 2026-08-07  |
 
-The samples are chosen with `CFG$keep_samples` in `scripts/config.R` from
-the full 14-sample matrix in `data/combined_protein.tsv`.
+Sample and raw-file names were changed for the paper; `config/sample_name_map.csv`
+maps the original FragPipe names (e.g. `Saline_R1_rep2_1`, `Lactate_R2_2`) to them.
+
+`data/combined_protein.tsv` and `data/experiment_annotation.tsv` contain only
+these six samples. They were taken from the full 14-run FragPipe report in
+`Fragpipe_results/Af293_DIA_new_reps/`, keeping the sample columns of the six
+runs and the proteins with a MaxLFQ intensity in at least one of them.
 
 **Caveat:** each group comes from a different acquisition day, so group and
 batch cannot be separated. The model is `~0 + group` without batch

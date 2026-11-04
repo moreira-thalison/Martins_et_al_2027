@@ -132,15 +132,17 @@ for (i in seq_len(nrow(PATHWAYS))) {
           plot.subtitle = element_text(size = 10, colour = "grey30"),
           legend.position = c(0.98, 0.5))
 
-  base <- file.path(CFG$dir_figures_kegg, sprintf("prot__pathway__%s_%s__ggkegg", cn, pid))
+  stem <- sprintf("prot__pathway__%s_%s__ggkegg", cn, pid)
+  base <- file.path(CFG$dir_figures_kegg, stem)
+  base_pdf <- file.path(CFG$dir_figures_kegg_pdf, stem)
   w <- diff(xr) / 100; h <- diff(yr) / 100
   ok <- tryCatch({
     ggsave(paste0(base, ".png"), p, width = w, height = h, dpi = 600, bg = "white", limitsize = FALSE)
-    ggsave(paste0(base, ".pdf"), p, width = w, height = h, bg = "white", limitsize = FALSE)
+    ggsave(paste0(base_pdf, ".pdf"), p, width = w, height = h, bg = "white", limitsize = FALSE)
     TRUE
   }, error = function(e) { message("  [error] save ", pid, ": ", conditionMessage(e)); FALSE })
   if (!ok) {
-    for (ext in c(".png", ".pdf")) if (file.exists(paste0(base, ext))) file.remove(paste0(base, ext))
+    for (f in c(paste0(base, ".png"), paste0(base_pdf, ".pdf"))) if (file.exists(f)) file.remove(f)
     cov[pathway == pid, status := "render_failed"]
   }
 }

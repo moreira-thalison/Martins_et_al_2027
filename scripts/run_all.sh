@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # ============================================================================
 # run_all.sh  -  Reproduce the AF293 DIA "3v3" subset analysis (exploratory).
-# Lactate {R2,R3,R4} vs Saline {R1,R2,R3}_rep2, selected via CFG$keep_samples
-# from the full new-reps matrix in data/.
+# Lactate R1-R3 vs Saline R1-R3 (paper names; config/sample_name_map.csv),
+# data/ already reduced to these six samples.
 #
 #   bash scripts/run_all.sh
 #   DIA_PROJECT_ROOT=/path bash scripts/run_all.sh   # override project root
@@ -29,7 +29,7 @@ run_opt()  { echo ">> $1 (optional)"; shift; Rscript "$@" || echo "WARN: optiona
 echo "=== AF293 DIA 3v3 pipeline | $(date) ==="
 
 # ---- core (offline) --------------------------------------------------------
-run_core "00 sample sheet (keep_samples: 3 Saline rep2 + 3 Lactate)" scripts/00_make_samplesheet.R
+run_core "00 sample sheet (3 Saline + 3 Lactate)" scripts/00_make_samplesheet.R
 run_core "01 limma DE (batch_adjust requested -> auto-disabled; ~0+group)" scripts/01_DE_proteome_limma.R
 run_core "03 QC: RLE per sample"                                     scripts/03_qc_rle.R
 
