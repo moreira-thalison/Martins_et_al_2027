@@ -62,6 +62,7 @@ results/ figures/ objects/ logs/   generated, git-ignored
 cache/        KEGG KGML downloads, git-ignored
 ```
 
+<<<<<<< HEAD
 ## Reproduce
 
 ```bash
@@ -85,3 +86,10 @@ and Frederico Soriani (last author) from Universidade Federal de Minas Gerais; t
 (from conidia to data analysis) were coordinated by Thalison Moreira (PhD Candidate) and Clayton Borges
 from Universidade Federal de Goiás at the Molecular Biology Laboratory and Multiuser Center for Omics 
 Analysis of Biomolecules (CMAS).
+=======
+
+## Raw data
+
+The Thermo `.raw` files are kept in the ProteomeXchange data base under the ID XXXXXXX.
+<!-- TODO: add PRIDE / MassIVE accession once deposited. -->
+>>>>>>> d31f2f2df1acf56b8cc47755172ee32ae9a31a25
