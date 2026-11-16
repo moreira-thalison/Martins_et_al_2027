@@ -6,7 +6,7 @@
 # PDF/) at CFG$dpi. Sourced after config.R.
 #
 # Sections
-#   1. Theme and units       theme_mo(), mm2in()
+#   1. Theme and units       theme_mo(), mm2in(), svg_inline_styles()
 #   2. Saving figures        fig_path(), save_fig(), save_heatmap(),
 #                            save_complex_heatmap()
 #   3. QC plots              pca_scores(), plot_pca(), plot_corr_heatmap()
@@ -27,6 +27,32 @@ theme_mo <- function(base = 9) {
 }
 
 mm2in <- function(mm) mm / 25.4
+
+# svglite keeps the default shape style (fill: none; stroke: black; round caps
+# and joins) in a CSS <style> block. Affinity and some other editors ignore that
+# block, so unstyled lines and outlines fall back to the SVG default (solid
+# black fill). This writes the defaults into every shape's own style attribute.
+svg_inline_styles <- function(path) {
+  x <- paste(readLines(path, warn = FALSE, encoding = "UTF-8"), collapse = "\n")
+  if (grepl("<g class='glyphgroup'", x, fixed = TRUE))    # real groups, not the CSS rule
+    warning("SVG has glyph groups; their paths get fill: none too: ", path)
+  defaults <- c("fill" = "none", "stroke" = "#000000", "stroke-linecap" = "round",
+                "stroke-linejoin" = "round", "stroke-miterlimit" = "10.00")
+  fix_tag <- function(tag) {
+    has_style <- grepl("style='", tag, fixed = TRUE)
+    style <- if (has_style) sub("^.*style='([^']*)'.*$", "\\1", tag) else ""
+    add <- defaults[!vapply(names(defaults), function(k)
+      grepl(sprintf("(^|;)\\s*%s\\s*:", k), style, perl = TRUE), logical(1))]
+    if (!length(add)) return(tag)
+    extra <- paste0(names(add), ": ", add, ";", collapse = " ")
+    if (has_style) sub("style='([^']*)'", paste0("style='\\1 ", extra, "'"), tag)
+    else sub("^(<[a-z]+)", paste0("\\1 style='", extra, "'"), tag)
+  }
+  m <- gregexpr("<(line|polyline|polygon|path|rect|circle)\\b[^>]*>", x, perl = TRUE)
+  regmatches(x, m) <- list(vapply(regmatches(x, m)[[1]], fix_tag, character(1), USE.NAMES = FALSE))
+  writeLines(x, path, useBytes = TRUE)
+  invisible(path)
+}
 
 
 # 2. Saving figures ------------------------------------------------------------

@@ -14,7 +14,9 @@
 #   f  COG sub-panel, two versions:
 #        v1  log2FC strip          (beeswarm per category)        [cf. prot__enrich__..__cog_lfc_strip]
 #        v2  over-representation   (bubble, category x direction) [cf. prot__enrich__..__cog_bubble_ora]
-#   v3 = same layout without f.
+#   v3 = no COG; f = boxplots of the leading-edge proteins of four GO sets
+#        higher in Lactate (NADH to ubiquinone, mitochondrial inner membrane,
+#        protein-folding chaperone binding, proteasome regulatory particle base).
 #
 # Inputs : results/ tables from 01, 05, 05c and 08
 # Outputs: figures/panel/prot__panel__<contrast>__v1_cog_lfc_strip.{svg,png}
@@ -34,6 +36,7 @@
 #   5. Panel d: identified-proteome heatmap
 #   6. Panel e: GO GSEA bubble
 #   7. Panel f: COG strip (v1) and COG ORA bubble (v2)
+#   7b. Panel f (v3): leading-edge boxplots
 #   8. Assemble and save
 # =============================================================================
 
@@ -231,6 +234,82 @@ p_cog_ora <- plot_cog_ora_bubble(
   panel_text_theme
 
 
+# 7b. Panel f (v3): leading-edge proteins of four GO sets higher in Lactate ----
+# Boxplots of the GSEA core-enrichment (leading-edge) proteins of four GO sets
+# with NES > 0. Each protein is drawn once, under the first set listed below
+# that contains it; the other sets it belongs to are named in that set's
+# subtitle. Values: imputed matrix used by limma; hollow points = imputed
+# (missing in the normalised matrix). Labels: limma log2FC and BH-adjusted p.
+LE_SETS <- data.table(
+  ID    = c("GO:0006120", "GO:0005743", "GO:0051087", "GO:0008540"),
+  title = c("Mitochondrial electron transport,\nNADH to ubiquinone",
+            "Mitochondrial inner membrane",
+            "Protein-folding chaperone binding",
+            "Proteasome regulatory\nparticle, base subcomplex"))
+
+gsea_all <- rbindlist(lapply(c("bp", "mf", "cc"), function(a)
+  read_result_table(sprintf("prot__enrich__%s__go_%s_gsea_all.tsv", cn, a), CFG)), fill = TRUE)
+le_sets <- merge(LE_SETS, gsea_all[, .(ID, NES, setSize, core_enrichment)], by = "ID", sort = FALSE)
+le_sets <- le_sets[match(LE_SETS$ID, ID)]
+if (anyNA(le_sets$NES) || any(le_sets$NES <= 0)) stop("Leading-edge GO sets missing or not NES > 0")
+le_members <- le_sets[, .(protein_id = strsplit(core_enrichment, "/", fixed = TRUE)[[1]]), by = ID]
+le_members[, set_rank := match(ID, LE_SETS$ID)]
+le_first <- le_members[, .SD[which.min(set_rank)], by = protein_id]   # one home set per protein
+
+norm_mat <- fread(file.path(CFG$dir_results, "prot__norm__all__matrix_limma.tsv"),
+                  sep = "\t", na.strings = c("", "NA"))
+le_long <- rbindlist(lapply(le_first$protein_id, function(p) data.table(
+  protein_id = p, sample = colnames(abundance), group = condition,
+  value = abundance[p, ],
+  imputed = is.na(unlist(norm_mat[protein_id == p, colnames(abundance), with = FALSE])))))
+le_de <- de[protein_id %chin% le_first$protein_id, .(protein_id, gene = label, description, log2FC, padj)]
+le_de[, strip := sprintf("%s\n%s", gene, tidy_label(description, max = 90, width = 24))]
+le_de[, stat_lab := sprintf("log2FC %.2f\nadj. p %s", log2FC, formatC(padj, format = "g", digits = 2))]
+le_de <- merge(le_de, le_first[, .(protein_id, ID, set_rank)], by = "protein_id")
+setorder(le_de, set_rank, -log2FC)
+le_de[, strip := factor(strip, levels = strip)]
+le_long <- merge(le_long, le_de[, .(protein_id, strip, ID)], by = "protein_id")
+le_long[, imputed := factor(ifelse(imputed, "imputed", "measured"), levels = c("measured", "imputed"))]
+
+le_box <- function(set_id, first) {
+  s  <- le_sets[ID == set_id]
+  dd <- le_long[ID == set_id]
+  st <- le_de[ID == set_id]
+  shared <- setdiff(le_members[ID == set_id, protein_id], st$protein_id)
+  sub <- sprintf("NES %.2f; leading edge %d of %d", s$NES,
+                 length(strsplit(s$core_enrichment, "/", fixed = TRUE)[[1]]), s$setSize)
+  if (length(shared)) sub <- paste0(sub, "\nalso: ", paste(de[match(shared, protein_id), label], collapse = ", "))
+  ggplot(dd, aes(group, value)) +
+    geom_boxplot(aes(fill = group), width = 0.6, alpha = 0.35, colour = "grey30",
+                 linewidth = 0.3, outlier.shape = NA) +
+    geom_point(aes(colour = group, shape = imputed), size = 1.7, stroke = 0.6,
+               position = position_jitter(width = 0.08, height = 0, seed = 1L)) +
+    geom_text(data = st, aes(x = 1.5, y = Inf, label = stat_lab), inherit.aes = FALSE,
+              vjust = 1.2, size = 2.1, lineheight = 0.9, colour = "grey20") +
+    facet_wrap(~ strip, nrow = 1, scales = "free_y") +
+    scale_fill_manual(values = GROUP_COLORS, name = NULL) +
+    scale_colour_manual(values = GROUP_COLORS, name = NULL) +
+    scale_shape_manual(values = c(measured = 16, imputed = 1), name = NULL, drop = FALSE) +
+    scale_y_continuous(expand = expansion(mult = c(0.08, 0.38))) +
+    labs(title = s$title, subtitle = sub, x = NULL,
+         y = if (first) expression(log[2]~"intensity") else NULL) +
+    theme_mo(8) +
+    theme(strip.text = element_text(size = 6.3, lineheight = 0.9),
+          axis.text.x = element_text(size = 6.5), axis.text.y = element_text(size = 6.5),
+          plot.title = element_text(face = "bold", size = 8.5, lineheight = 0.95),
+          plot.subtitle = element_text(colour = "grey35", size = 6.5),
+          legend.position = "none")     # groups are on the x axis; hollow = imputed (subtitle)
+}
+n_per_set <- le_de[, .N, by = set_rank][order(set_rank), N]
+p_le <- wrap_plots(lapply(seq_along(LE_SETS$ID), function(i) le_box(LE_SETS$ID[i], i == 1L)),
+                   nrow = 1, widths = n_per_set) +
+  plot_annotation(
+    title = sprintf("Leading-edge proteins of GO sets %s (NES > 0)", dl_low[["Up"]]),
+    subtitle = "hollow points = imputed values (not detected in that replicate)",
+    theme = theme(plot.title = element_text(face = "bold", size = 11),
+                  plot.subtitle = element_text(colour = "grey35", size = 7)))
+
+
 # 8. Assemble and save ---------------------------------------------------------
 ## 8.1 Layouts (15-column grid) ----
 # With f: a | b | c top band (rows 1-4); d heatmap as a tall left column
@@ -243,14 +322,16 @@ LAYOUT_WITH_COG <- c(
   area(5,  1, 15,  7),   # d heatmap
   area(5,  8,  9, 15),   # e GO GSEA
   area(10, 8, 15, 15))   # f COG
-# Without f: 12-row grid on a shorter canvas, so the a | b | c band keeps its
-# height (~120 mm) and d + e share the bottom rows side by side.
+# v3 (no COG): a | b | c band (rows 1-4), d heatmap + e GO GSEA side by side
+# (rows 5-12), and f leading-edge boxplots as a full-width bottom band
+# (rows 13-16).
 LAYOUT_NO_COG <- c(
   area(1,  1,  4,  7),   # a PCA
   area(1,  8,  4, 12),   # b volcano
   area(1, 13,  4, 15),   # c Venn
   area(5,  1, 12,  7),   # d heatmap
-  area(5,  8, 12, 15))   # e GO GSEA
+  area(5,  8, 12, 15),   # e GO GSEA
+  area(13, 1, 16, 15))   # f leading-edge boxplots
 
 ## 8.2 Builders ----
 assemble_panel <- function(plots, layout) {
@@ -268,6 +349,7 @@ save_panel <- function(pnl, suffix, height_mm) {
   base <- file.path(panel_dir, sprintf("prot__panel__%s__%s", cn, suffix))
   svglite::svglite(paste0(base, ".svg"), width = mm2in(PANEL_WIDTH_MM), height = mm2in(height_mm))
   print(pnl); invisible(dev.off())
+  svg_inline_styles(paste0(base, ".svg"))                # so Affinity draws lines, not black fills
   ragg::agg_png(paste0(base, ".png"), width = PANEL_WIDTH_MM, height = height_mm, units = "mm", res = 600)
   print(pnl); invisible(dev.off())
   message("DONE: ", base, ".{svg,png}")
@@ -277,7 +359,7 @@ save_panel <- function(pnl, suffix, height_mm) {
 shared_plots <- list(p_pca, p_volc, wrap_elements(full = g_venn), wrap_elements(full = g_heat), p_go)
 save_panel(assemble_panel(c(shared_plots, list(p_cog_strip)), LAYOUT_WITH_COG), "v1_cog_lfc_strip", 440)
 save_panel(assemble_panel(c(shared_plots, list(p_cog_ora)),   LAYOUT_WITH_COG), "v2_cog_bubble_ora", 440)
-save_panel(assemble_panel(shared_plots,                       LAYOUT_NO_COG),   "v3_no_cog", 360)
+save_panel(assemble_panel(c(shared_plots, list(wrap_elements(plot = p_le))), LAYOUT_NO_COG), "v3_no_cog", 480)
 
 message(sprintf(paste0("  a PCA | b volcano | c detected-venn(Lac=%d,Sal=%d) | d heatmap(n=%d quantified) | ",
                        "e GO GSEA(%d sets) | f = v1 COG strip(%d cats) / v2 COG ORA(%d rows)"),
