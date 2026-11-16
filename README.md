@@ -57,12 +57,15 @@ The raw files are available at PRIDE under the project with the
 ID PXD087400.
 
 ## Publication
+
 This proteome analysis is part of the a paper coordinated by Flávia Martins (1st author)
 and Frederico Soriani (last author) from Universidade Federal de Minas Gerais; the whole proteomics
 (from conidia to data analysis) were coordinated by Thalison Moreira (PhD Candidate) and Clayton Borges
 from Universidade Federal de Goiás at the Molecular Biology Laboratory and Multiuser Center for Omics 
 Analysis of Biomolecules (CMAS).
+
 =======
+
 
 
 
