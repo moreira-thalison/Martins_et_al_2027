@@ -17,6 +17,7 @@ PKGS <- c(
   "data.table", "ggplot2", "matrixStats", "pheatmap", "ggrepel", "UpSetR",
   "circlize", "VennDiagram", "futile.logger", "tidygraph", "dplyr", "ggraph",
   "igraph", "patchwork", "scales", "stringr", "RCurl", "ggforce", "svglite", "ragg",
+  "ggbeeswarm",
   # ---- Bioconductor ----
   "limma", "clusterProfiler", "enrichplot", "KEGGREST", "ComplexHeatmap",
   "EnhancedVolcano", "ggkegg", "STRINGdb", "fgsea"

@@ -6,22 +6,15 @@ FragPipe / DIA-NN `combined_protein.tsv` (MaxLFQ), analysed with limma.
 
 ## Design
 
-| Group   | N | Samples                                              | Acquisition |
-|---------|---|------------------------------------------------------|-------------|
-| Saline  | 3 | Saline_R1, Saline_R2, Saline_R3                      | 2026-08-19  |
-| Lactate | 3 | Lactate_R1, Lactate_R2, Lactate_R3                   | 2026-08-07  |
+| Group   | N | Samples                                              | 
+|---------|---|------------------------------------------------------|
+| Saline  | 3 | Saline_R1, Saline_R2, Saline_R3                      |
+| Lactate | 3 | Lactate_R1, Lactate_R2, Lactate_R3                   | 
 
-Sample and raw-file names were changed for the paper; `config/sample_name_map.csv`
-maps the original FragPipe names (e.g. `Saline_R1_rep2_1`, `Lactate_R2_2`) to them.
-
-`data/combined_protein.tsv` and `data/experiment_annotation.tsv` contain only
-these six samples. They were taken from the full 14-run FragPipe report in
-`Fragpipe_results/Af293_DIA_new_reps/`, keeping the sample columns of the six
-runs and the proteins with a MaxLFQ intensity in at least one of them.
-
-**Caveat:** each group comes from a different acquisition day, so group and
-batch cannot be separated. The model is `~0 + group` without batch
-correction.
+The Uniprot proteome of the strain Af293 was used as database for the 
+spectral serach instead of the CEA10's one due to be more complete
+and with more confident proteins. The similarity bewtween the strains makes the 
+results fully applicable to CEA10 though.
 
 ## Methods (summary)
 
@@ -31,7 +24,7 @@ correction.
   width 0.3, seed 123), `arrayWeights()`; significance = BH padj <= 0.05,
   no log2FC cutoff.
 - Enrichment uses the detected proteome as the universe:
-  KEGG (`afm`, ORA + GSEA), GO (curated UniProt, proteome UP000002530),
+  KEGG (`afm`, ORA + GSEA), GO (curated UniProt, proteome Af293 UP000002530),
   COG (UniProt eggNOG xrefs -> eggNOG 5.0 level 2759).
 - KEGG pathway maps (ggkegg), DEP heatmaps, detected-proteome Venn and
   composite panel figures.
@@ -51,17 +44,20 @@ correction.
 | 08   | `08_global_heatmap_venn.R`        | DEP heatmaps, detection Venn         |
 | 09b  | `09b_panel_variants.R`            | composite panels                     |
 
-`config.R` holds every path and threshold; `io.R` and `plot_utils.R` are
-shared helpers.
+`config.R` holds every path and threshold; `io.R` (input / DE tables),
+`plot_utils.R` (figures) and `enrich_utils.R` (KEGG / GO / COG enrichment and
+bubble plots) are shared helpers. Every script opens with a header listing its
+inputs, outputs and numbered steps, and each step is marked in the code by a
+`# N. Step name ----` line (shown in the RStudio document outline).
 
 ## Layout
 
 ```
 scripts/      pipeline
-config/       samples.tsv (sample sheet that was run), experiment_annotation.tsv
-data/         combined_protein.tsv, experiment_annotation.tsv (raw files not tracked)
+config/       samples.tsv, experiment_annotation.tsv (output from FragPipe)
+data/         combined_protein.tsv (output from FragPipe), experiment_annotation.tsv (output from FragPipe)
 annotation/   cached UniProt GO / eggNOG reference tables
-env/          dependencies.R installer + sessionInfo of a known-good run
+env/          dependencies.R installer + sessionInfo
 results/ figures/ objects/ logs/   generated, git-ignored
 cache/        KEGG KGML downloads, git-ignored
 ```
@@ -70,7 +66,7 @@ cache/        KEGG KGML downloads, git-ignored
 
 ```bash
 Rscript env/dependencies.R
-bash scripts/run_all.sh
+bash scripts/run_all.sh #ties all the scripts together
 ```
 
 Developed on R 4.5.2. Core steps (00, 01, 03) run offline. The enrichment
@@ -80,5 +76,12 @@ and pathway steps need internet access (KEGG; UniProt/eggNOG only if
 
 ## Raw data
 
-The Thermo `.raw` files are not stored in this repository.
-<!-- TODO: add PRIDE / MassIVE accession once deposited. -->
+The raw files are available at PRIDE under the project with the 
+ID XXXXXXXX.
+
+## Publication
+This proteome analysis is part of the a paper coordinated by Flávia Martins (1st author)
+and Frederico Soriani (last author) from Universidade Federal de Minas Gerais; the whole proteomics
+(from conidia to data analysis) were coordinated by Thalison Moreira (PhD Candidate) and Clayton Borges
+from Universidade Federal de Goiás at the Molecular Biology Laboratory and Multiuser Center for Omics 
+Analysis of Biomolecules (CMAS).

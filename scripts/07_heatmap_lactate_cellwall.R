@@ -1,32 +1,45 @@
 #!/usr/bin/env Rscript
-# ============================================================================
-# 07_heatmap_lactate_cellwall.R - Curated cell-wall/lactate protein heatmap.
+# =============================================================================
+# 07_heatmap_lactate_cellwall.R
+# Curated cell-wall / lactate protein heatmap. Rows keep the functional-group
+# and gene order given in GENE_SETS; columns run Saline then Lactate. Cells are
+# per-protein z-scores of the quantile-normalised, Perseus-imputed matrix from
+# 01; the right-hand bars show the limma log2FC (* = padj <= 0.05).
 #
-# Uses the quantile-normalized, Perseus-imputed matrix and limma results made by
-# 01_DE_proteome_limma.R. Rows are kept in the supplied functional-group and
-# gene order; columns are ordered Saline then Lactate. Heatmap values are
-# per-protein z-scores (relative abundance across the six samples).
+# Inputs : results/prot__imputed__all__matrix_limma.tsv,
+#          results/prot__de__<contrast>__results_limma.tsv, config/samples.tsv
+# Outputs: figures/prot__de__<contrast>__heatmap_cellwall_proteins.png
+#          figures/Figures PDF/prot__de__<contrast>__heatmap_cellwall_proteins.pdf
+#          logs/07_heatmap_lactate_cellwall.log
+# Run    : Rscript scripts/07_heatmap_lactate_cellwall.R
 #
-# Outputs:
-#   figures/prot__de__Lactate_vs_Saline__heatmap_cellwall_proteins.png
-#   figures/Figures PDF/prot__de__Lactate_vs_Saline__heatmap_cellwall_proteins.pdf
-#   logs/07_heatmap_lactate_cellwall.log
-#
-# Run: Rscript scripts/07_heatmap_lactate_cellwall.R
-# ============================================================================
+# Steps
+#   0. Setup
+#   1. Protein panel definition
+#   2. Match panel members to the limma results
+#   3. Abundance matrix and z-scores
+#   4. Heatmap
+#   5. Save figure and run log
+# =============================================================================
+
+
+# 0. Setup ---------------------------------------------------------------------
 suppressPackageStartupMessages({
-  library(data.table)
-  library(ComplexHeatmap)
-  library(circlize)
-  library(grid)
+  library(data.table); library(ComplexHeatmap); library(circlize); library(grid)
 })
-
-args <- commandArgs(FALSE)
-self <- sub("^--file=", "", grep("^--file=", args, value = TRUE))
-SDIR <- if (length(self)) dirname(normalizePath(self)) else "scripts"
+script_file <- sub("^--file=", "", grep("^--file=", commandArgs(FALSE), value = TRUE))
+SDIR <- if (length(script_file)) dirname(normalizePath(script_file)) else "scripts"
 source(file.path(SDIR, "config.R"))
+source(file.path(SDIR, "io.R"))
+source(file.path(SDIR, "plot_utils.R"))
 
-gene_sets <- list(
+contrast <- CFG$contrasts[[1]]$name
+require_inputs(c(imputed_matrix_path(CFG), de_results_path(CFG, contrast), CFG$samples_tsv))
+
+
+# 1. Protein panel definition --------------------------------------------------
+## 1.1 Functional groups, in display order ----
+GENE_SETS <- list(
   Cell_wall_biosynthesis_remodeling = c(
     "fks1",
     "ags1", "ags2", "ags3",
@@ -42,22 +55,22 @@ gene_sets <- list(
     "rlmA"
   ),
   Lactate_metabolism = c(
-    "AFUA_5G14800",
-    "AFUA_1G17040",
-    "AFUA_1G00510",
-    "AFUA_1G17520"
+    "AFUA_5G14800", "AFUA_1G17040", "AFUA_1G00510", "AFUA_1G17520"
   ),
   Pyruvate_ethanol_metabolism = c(
-    "AFUA_3G11070",
-    "AFUA_6G00750",
-    "AFUA_7G01010",
-    "AFUA_7G04380"
+    "AFUA_3G11070", "AFUA_6G00750", "AFUA_7G01010", "AFUA_7G04380"
   )
 )
+CATEGORY_LABELS <- c(
+  Cell_wall_biosynthesis_remodeling = "Cell wall biosynthesis & remodeling",
+  Cell_wall_integrity_signaling     = "Cell wall integrity signaling",
+  Lactate_metabolism                = "Lactate metabolism",
+  Pyruvate_ethanol_metabolism       = "Pyruvate/ethanol metabolism"
+)
 
-# AF293 aliases from NCBI Gene/UniProt. The input table contains a mixture of
-# symbols (e.g. gel1) and AFUA locus tags, so both are tried when matching.
-symbol_to_locus <- c(
+## 1.2 Gene symbol -> Af293 locus tag (NCBI Gene / UniProt) ----
+# The DE table mixes symbols (e.g. gel1) and AFUA locus tags, so both are tried.
+SYMBOL_TO_LOCUS <- c(
   fks1 = "AFUA_6G12400",
   ags1 = "AFUA_3G00910", ags2 = "AFUA_2G11270", ags3 = "AFUA_1G15440",
   chsA = "AFUA_2G01870", chsB = "AFUA_4G04180", chsC = "AFUA_5G00760",
@@ -72,135 +85,74 @@ symbol_to_locus <- c(
   rlmA = "AFUA_3G08520"
 )
 
-contrast <- CFG$contrasts[[1]]$name
-matrix_file <- file.path(CFG$dir_results, "prot__imputed__all__matrix_limma.tsv")
-de_file <- file.path(
-  CFG$dir_results,
-  sprintf("prot__de__%s__results_limma.tsv", contrast)
-)
-required <- c(matrix_file, de_file, CFG$samples_tsv)
-missing_files <- required[!file.exists(required)]
-if (length(missing_files)) {
-  stop(
-    "Required input(s) missing; run 00_make_samplesheet.R and ",
-    "01_DE_proteome_limma.R first:\n  ",
-    paste(missing_files, collapse = "\n  ")
-  )
-}
-
-# ---- panel definition and ID matching --------------------------------------
-panel <- rbindlist(lapply(seq_along(gene_sets), function(i) {
-  data.table(
-    category = names(gene_sets)[i],
-    category_order = i,
-    gene_order = seq_along(gene_sets[[i]]),
-    requested_gene = gene_sets[[i]]
-  )
+## 1.3 One row per requested member ----
+panel <- rbindlist(lapply(seq_along(GENE_SETS), function(i) {
+  data.table(category = names(GENE_SETS)[i], category_order = i,
+             gene_order = seq_along(GENE_SETS[[i]]), requested_gene = GENE_SETS[[i]])
 }))
+is_symbol <- !grepl("^AFUA_[0-9]+G[0-9]+$", panel$requested_gene, ignore.case = TRUE)
 panel[, locus_tag := requested_gene]
-is_symbol <- !grepl(
-  "^AFUA_[0-9]+G[0-9]+$",
-  panel$requested_gene,
-  ignore.case = TRUE
-)
-panel[is_symbol, locus_tag := unname(symbol_to_locus[requested_gene])]
-if (anyNA(panel$locus_tag)) {
-  stop("No AF293 locus mapping for: ",
-       paste(panel[is.na(locus_tag), requested_gene], collapse = ", "))
-}
+panel[is_symbol, locus_tag := unname(SYMBOL_TO_LOCUS[requested_gene])]
+if (anyNA(panel$locus_tag))
+  stop("No AF293 locus mapping for: ", paste(panel[is.na(locus_tag), requested_gene], collapse = ", "))
 
-de <- fread(de_file, sep = "\t", na.strings = c("", "NA"))
+
+# 2. Match panel members to the limma results ----------------------------------
+de <- read_de_results(CFG, contrast, na.strings = c("", "NA"))
 needed_de <- c("protein_id", "gene_raw", "description", "log2FC", "padj", "regulation")
-if (!all(needed_de %in% names(de))) {
-  stop("Unexpected limma result columns; missing: ",
-       paste(setdiff(needed_de, names(de)), collapse = ", "))
-}
-de[, `:=`(
-  gene_key = toupper(trimws(gene_raw)),
-  protein_key = toupper(trimws(protein_id))
-)]
+if (!all(needed_de %in% names(de)))
+  stop("Unexpected limma result columns; missing: ", paste(setdiff(needed_de, names(de)), collapse = ", "))
+de[, `:=`(gene_key = toupper(trimws(gene_raw)), protein_key = toupper(trimws(protein_id)))]
 
-# Resolve each requested member against both its symbol and its AFUA locus. If
-# an annotation unexpectedly maps to multiple proteins, retain the most abundant
-# limma row and record the number of matches in the companion table.
+# Each member is matched by symbol and by locus tag. If it hits several
+# proteins, keep the most abundant one and record the number of matches.
 resolved <- lapply(seq_len(nrow(panel)), function(i) {
   keys <- unique(toupper(c(panel$requested_gene[i], panel$locus_tag[i])))
-  hit <- de[gene_key %chin% keys | protein_key %chin% keys]
-  if (!nrow(hit)) {
-    return(data.table(
-      protein_id = NA_character_, gene_raw = NA_character_,
-      description = NA_character_, log2FC = NA_real_, padj = NA_real_,
-      regulation = NA_character_, n_matches = 0L
-    ))
-  }
+  hit  <- de[gene_key %chin% keys | protein_key %chin% keys]
+  if (!nrow(hit))
+    return(data.table(protein_id = NA_character_, gene_raw = NA_character_,
+                      description = NA_character_, log2FC = NA_real_, padj = NA_real_,
+                      regulation = NA_character_, n_matches = 0L))
   if ("AveExpr" %in% names(hit)) setorder(hit, -AveExpr, padj, na.last = TRUE)
-  hit[1, .(
-    protein_id, gene_raw, description, log2FC, padj,
-    regulation = as.character(regulation), n_matches = nrow(hit)
-  )]
+  hit[1, .(protein_id, gene_raw, description, log2FC, padj,
+           regulation = as.character(regulation), n_matches = nrow(hit))]
 })
 panel <- cbind(panel, rbindlist(resolved))
 panel[, detected := !is.na(protein_id)]
 panel[, status := fifelse(detected, "detected", "not detected after limma filtering")]
-panel[, display_label := fifelse(
-  is_symbol,
-  sprintf("%s (%s)", requested_gene, locus_tag),
-  requested_gene
-)]
+panel[, display_label := fifelse(is_symbol, sprintf("%s (%s)", requested_gene, locus_tag), requested_gene)]
 setorder(panel, category_order, gene_order)
 
-# ---- abundance matrix and sample ordering ----------------------------------
-mdt <- fread(matrix_file, sep = "\t")
-if (!"protein_id" %in% names(mdt)) stop("Matrix lacks a protein_id column: ", matrix_file)
-abundance <- as.matrix(mdt[, setdiff(names(mdt), "protein_id"), with = FALSE])
-storage.mode(abundance) <- "double"
-rownames(abundance) <- mdt$protein_id
 
-samples <- unique(fread(CFG$samples_tsv, sep = "\t")[, .(sample_id, group)])
-samples[, group := factor(group, levels = CFG$group_levels)]
-setorder(samples, group, sample_id)
-sample_order <- samples$sample_id[samples$sample_id %in% colnames(abundance)]
-if (!length(sample_order)) stop("No sample-sheet sample IDs found in the limma matrix")
+# 3. Abundance matrix and z-scores ---------------------------------------------
+imp       <- read_imputed_matrix(CFG)
+abundance <- imp$abundance
+samples   <- imp$samples
 
 plot_panel <- panel[detected & protein_id %in% rownames(abundance)]
-if (nrow(plot_panel) < 2L) {
+if (nrow(plot_panel) < 2L)
   stop("Only ", nrow(plot_panel), " requested protein(s) detected; need at least 2 for a heatmap")
-}
-mat <- abundance[plot_panel$protein_id, sample_order, drop = FALSE]
+mat <- abundance[plot_panel$protein_id, , drop = FALSE]
 rownames(mat) <- make.unique(plot_panel$display_label)
+zmat <- row_zscore(mat)          # imputed values are complete; constant rows -> 0
 
-# Per-protein z-score; imputed limma values make this complete, but retain a
-# defensive zero-variance treatment so a constant row cannot create NaN values.
-row_mean <- rowMeans(mat, na.rm = TRUE)
-row_sd <- apply(mat, 1, sd, na.rm = TRUE)
-zmat <- sweep(mat, 1, row_mean, "-")
-valid_sd <- is.finite(row_sd) & row_sd > 0
-zmat[valid_sd, ] <- sweep(zmat[valid_sd, , drop = FALSE], 1, row_sd[valid_sd], "/")
-zmat[!valid_sd, ] <- 0
 
-# ---- annotations and heatmap ----------------------------------------------
-sample_group <- factor(
-  samples$group[match(colnames(zmat), samples$sample_id)],
-  levels = CFG$group_levels
-)
+# 4. Heatmap -------------------------------------------------------------------
+## 4.1 Column annotation: condition ----
 top_ann <- HeatmapAnnotation(
-  Condition = sample_group,
+  Condition = samples$group,
   col = list(Condition = GROUP_COLORS[CFG$group_levels]),
   annotation_name_side = "left"
 )
 
-reg <- factor(plot_panel$regulation, levels = c("Up", "NS", "Down"))
-lfc <- plot_panel$log2FC
+## 4.2 Row annotation: limma log2FC bars and significance stars ----
+reg       <- factor(plot_panel$regulation, levels = c("Up", "NS", "Down"))
+lfc       <- plot_panel$log2FC
 lfc_limit <- max(1, ceiling(max(abs(lfc), na.rm = TRUE)))
-sig_label <- fifelse(
-  !is.na(plot_panel$padj) & plot_panel$padj <= CFG$padj,
-  "*", ""
-)
+sig_label <- fifelse(!is.na(plot_panel$padj) & plot_panel$padj <= CFG$padj, "*", "")
 right_ann <- rowAnnotation(
   `log2FC\nLactate/Saline` = anno_barplot(
-    lfc,
-    baseline = 0,
-    ylim = c(-lfc_limit, lfc_limit),
+    lfc, baseline = 0, ylim = c(-lfc_limit, lfc_limit),
     gp = gpar(fill = unname(REG_COLORS[as.character(reg)]), col = NA),
     axis_param = list(side = "bottom", labels_rot = 0),
     width = unit(32, "mm")
@@ -210,21 +162,13 @@ right_ann <- rowAnnotation(
   gap = unit(2, "mm")
 )
 
-category_labels <- c(
-  Cell_wall_biosynthesis_remodeling = "Cell wall biosynthesis & remodeling",
-  Cell_wall_integrity_signaling = "Cell wall integrity signaling",
-  Lactate_metabolism = "Lactate metabolism",
-  Pyruvate_ethanol_metabolism = "Pyruvate/ethanol metabolism"
-)
-row_split <- factor(
-  unname(category_labels[plot_panel$category]),
-  levels = unname(category_labels[names(gene_sets)])
-)
-heat_col <- colorRamp2(c(-2, 0, 2), c("#4575b4", "white", "#d73027"))
+## 4.3 Heatmap body, split by functional group ----
+row_split <- factor(unname(CATEGORY_LABELS[plot_panel$category]),
+                    levels = unname(CATEGORY_LABELS[names(GENE_SETS)]))
 ht <- Heatmap(
   zmat,
   name = "row\nz-score",
-  col = heat_col,
+  col = colorRamp2(c(-2, 0, 2), c("#4575b4", "white", "#d73027")),
   na_col = "grey85",
   top_annotation = top_ann,
   right_annotation = right_ann,
@@ -244,26 +188,14 @@ ht <- Heatmap(
   heatmap_legend_param = list(at = c(-2, -1, 0, 1, 2))
 )
 
-# ---- save figure and run log ------------------------------------------------
-fig_name <- sprintf("prot__de__%s__heatmap_cellwall_proteins", contrast)
-height_mm <- max(125, 8 * nrow(plot_panel) + 35)
-width_mm <- 235
-png(file.path(CFG$dir_figures, paste0(fig_name, ".png")), width = width_mm, height = height_mm,
-    units = "mm", res = CFG$dpi)
-draw(ht, merge_legends = TRUE, heatmap_legend_side = "right",
-     annotation_legend_side = "right")
-dev.off()
-pdf(file.path(CFG$dir_figures_pdf, paste0(fig_name, ".pdf")), width = width_mm / 25.4,
-    height = height_mm / 25.4)
-draw(ht, merge_legends = TRUE, heatmap_legend_side = "right",
-     annotation_legend_side = "right")
-dev.off()
 
-missing_message <- if (any(!panel$detected)) {
-  paste(
-    panel[detected == FALSE, sprintf("%s [%s]", requested_gene, locus_tag)],
-    collapse = "; "
-  )
+# 5. Save figure and run log ---------------------------------------------------
+fig_name <- sprintf("prot__de__%s__heatmap_cellwall_proteins", contrast)
+save_complex_heatmap(ht, fig_name, width_mm = 235,
+                     height_mm = max(125, 8 * nrow(plot_panel) + 35), CFG)
+
+not_detected <- if (any(!panel$detected)) {
+  paste(panel[detected == FALSE, sprintf("%s [%s]", requested_gene, locus_tag)], collapse = "; ")
 } else {
   "none"
 }
@@ -274,14 +206,12 @@ writeLines(c(
   sprintf("panel_members\t%d", nrow(panel)),
   sprintf("detected\t%d", sum(panel$detected)),
   sprintf("not_detected\t%d", sum(!panel$detected)),
-  sprintf("not_detected_members\t%s", missing_message),
+  sprintf("not_detected_members\t%s", not_detected),
   "matrix\tquantile-normalized, Perseus-imputed limma matrix",
   "heatmap_scale\tper-protein z-score"
 ), file.path(CFG$dir_logs, "07_heatmap_lactate_cellwall.log"))
 
-message(sprintf(
-  "[heatmap] detected %d/%d requested proteins; not detected: %d",
-  sum(panel$detected), nrow(panel), sum(!panel$detected)
-))
-if (any(!panel$detected)) message("  ", missing_message)
+message(sprintf("[heatmap] detected %d/%d requested proteins; not detected: %d",
+                sum(panel$detected), nrow(panel), sum(!panel$detected)))
+if (any(!panel$detected)) message("  ", not_detected)
 message("[heatmap] figure: ", fig_name, ".{png,pdf}")
