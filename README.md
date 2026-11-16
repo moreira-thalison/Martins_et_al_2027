@@ -2,7 +2,7 @@
 
 Analysis code for Martins et al. (2027). Differential proteomics of
 *A. fumigatus* Af293 conidia exposed to lactate versus saline, from
-FragPipe / DIA-NN `combined_protein.tsv` (MaxLFQ), analysed with limma.
+FragPipe / DIA-NN MaxLFQ, analysed with limma.
 
 ## Design
 
@@ -12,8 +12,8 @@ FragPipe / DIA-NN `combined_protein.tsv` (MaxLFQ), analysed with limma.
 | Lactate | 3 | Lactate_R1, Lactate_R2, Lactate_R3                   | 
 
 The Uniprot proteome of the strain Af293 was used as database for the 
-spectral serach instead of the CEA10's one due to be more complete
-and with more confident proteins. The similarity bewtween the strains makes the 
+spectral search instead of the CEA10's one due to be more complete
+and with more confident proteins. The similarity between the strains makes the 
 results fully applicable to CEA10 though.
 
 ## Methods (summary)
@@ -50,35 +50,11 @@ bubble plots) are shared helpers. Every script opens with a header listing its
 inputs, outputs and numbered steps, and each step is marked in the code by a
 `# N. Step name ----` line (shown in the RStudio document outline).
 
-## Layout
-
-```
-scripts/      pipeline
-config/       samples.tsv, experiment_annotation.tsv (output from FragPipe)
-data/         combined_protein.tsv (output from FragPipe), experiment_annotation.tsv (output from FragPipe)
-annotation/   cached UniProt GO / eggNOG reference tables
-env/          dependencies.R installer + sessionInfo
-results/ figures/ objects/ logs/   generated, git-ignored
-cache/        KEGG KGML downloads, git-ignored
-```
-
-<<<<<<< HEAD
-## Reproduce
-
-```bash
-Rscript env/dependencies.R
-bash scripts/run_all.sh #ties all the scripts together
-```
-
-Developed on R 4.5.2. Core steps (00, 01, 03) run offline. The enrichment
-and pathway steps need internet access (KEGG; UniProt/eggNOG only if
-`annotation/` is missing). To run from another location, set
-`DIA_PROJECT_ROOT=/path/to/project`.
 
 ## Raw data
 
 The raw files are available at PRIDE under the project with the 
-ID XXXXXXXX.
+ID PXD087400.
 
 ## Publication
 This proteome analysis is part of the a paper coordinated by Flávia Martins (1st author)
@@ -88,8 +64,6 @@ from Universidade Federal de Goiás at the Molecular Biology Laboratory and Mult
 Analysis of Biomolecules (CMAS).
 =======
 
-## Raw data
 
-The Thermo `.raw` files are kept in the ProteomeXchange data base under the ID XXXXXXX.
-<!-- TODO: add PRIDE / MassIVE accession once deposited. -->
->>>>>>> d31f2f2df1acf56b8cc47755172ee32ae9a31a25
+
+
